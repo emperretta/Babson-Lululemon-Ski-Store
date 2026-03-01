@@ -372,4 +372,32 @@ body {
   .product-card {
     animation-delay: 0s !important;
   }
+
+  /* Make modal nearly full-screen on mobile */
+  .modal-content {
+    max-width: 100% !important;
+    max-height: 100vh !important;
+    height: 100vh !important;
+    border-radius: 0 !important;
+    margin: 0 !important;
+  }
+
+  .modal-overlay {
+    padding: 0 !important;
+    align-items: stretch !important;
+  }
+
+  /* Prevent body scroll when modal is open */
+  body.modal-open {
+    overflow: hidden;
+    position: fixed;
+    width: 100%;
+  }
+}
+
+@media (max-width: 480px) {
+  .modal-content {
+    max-height: 100dvh !important;
+    height: 100dvh !important;
+  }
 }

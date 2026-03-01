@@ -105,6 +105,16 @@ export default function App() {
     if (data) setOrders(JSON.parse(data));
   }, []);
 
+  // Lock body scroll when modal is open (fixes iOS scrolling)
+  useEffect(() => {
+    if (selectedProduct || showAdmin) {
+      document.body.classList.add("modal-open");
+    } else {
+      document.body.classList.remove("modal-open");
+    }
+    return () => document.body.classList.remove("modal-open");
+  }, [selectedProduct, showAdmin]);
+
   const saveOrders = (newOrders) => {
     setOrders(newOrders);
     localStorage.setItem("ski_store_orders", JSON.stringify(newOrders));
@@ -459,9 +469,9 @@ export default function App() {
     const canAdd = selectedColor && selectedSize;
     return (
       <div className="modal-overlay" style={styles.overlay} onClick={() => { setSelectedProduct(null); setSelectedColor(""); setSelectedSize(""); setQty(1); }}>
-        <div className="modal-content" style={{ ...styles.modal, padding: 0, overflow: "hidden" }} onClick={(e) => e.stopPropagation()}>
+        <div className="modal-content" style={{ ...styles.modal, padding: 0, overflow: "hidden", display: "flex", flexDirection: "column" }} onClick={(e) => e.stopPropagation()}>
           {/* Modal Product Image */}
-          <div style={{ position: "relative" }}>
+          <div style={{ position: "relative", flexShrink: 0 }}>
             <img
               src={p.image}
               alt={p.name}
@@ -472,7 +482,7 @@ export default function App() {
               <XIcon />
             </button>
           </div>
-          <div style={{ padding: 28 }}>
+          <div style={{ padding: 28, overflowY: "auto", WebkitOverflowScrolling: "touch", flex: 1 }}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
               <div>
                 <h2 style={{ margin: 0, fontSize: 20, fontWeight: 700, lineHeight: 1.3 }}>{p.name}</h2>
