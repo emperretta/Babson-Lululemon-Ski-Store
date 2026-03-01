@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { addOrder, subscribeToOrders, updateOrder, deleteOrderFromDB } from "./firebase";
 
 const PRODUCTS = [
   // Women's Tops
@@ -99,10 +100,12 @@ export default function App() {
   const [adminPass, setAdminPass] = useState("");
   const [adminAuthed, setAdminAuthed] = useState(false);
 
-  // Load orders from storage
+  // Load orders from Firebase (real-time)
   useEffect(() => {
-    const data = localStorage.getItem("ski_store_orders");
-    if (data) setOrders(JSON.parse(data));
+    const unsubscribe = subscribeToOrders((firebaseOrders) => {
+      setOrders(firebaseOrders);
+    });
+    return () => unsubscribe();
   }, []);
 
   // Lock body scroll when modal is open (fixes iOS scrolling)
@@ -115,10 +118,7 @@ export default function App() {
     return () => document.body.classList.remove("modal-open");
   }, [selectedProduct, showAdmin]);
 
-  const saveOrders = (newOrders) => {
-    setOrders(newOrders);
-    localStorage.setItem("ski_store_orders", JSON.stringify(newOrders));
-  };
+  // No longer need saveOrders — Firebase handles persistence
 
   const cartTotal = cart.reduce((s, i) => s + i.price * i.qty, 0);
   const cartEmbroidery = cart.reduce((s, i) => s + EMBROIDERY_COST * (i.embroideryQty || 0), 0);
@@ -174,7 +174,7 @@ export default function App() {
     }));
   };
 
-  const submitOrder = () => {
+  const submitOrder = async () => {
     if (!name.trim() || !email.trim()) return;
     const orderEmbroidery = cart.reduce((s, i) => s + EMBROIDERY_COST * (i.embroideryQty || 0), 0);
     const order = {
@@ -188,10 +188,10 @@ export default function App() {
       embroidery: orderEmbroidery,
       total: cartTotal + orderEmbroidery,
       paid: false,
+      cancelled: false,
       date: new Date().toISOString(),
     };
-    const newOrders = [...orders, order];
-    saveOrders(newOrders);
+    await addOrder(order);
     setCart([]);
     setName("");
     setEmail("");
@@ -201,22 +201,24 @@ export default function App() {
   };
 
   const togglePaid = (orderId) => {
-    const newOrders = orders.map((o) =>
-      o.id === orderId ? { ...o, paid: !o.paid } : o
-    );
-    saveOrders(newOrders);
+    const order = orders.find((o) => o.id === orderId);
+    if (order?.firestoreId) {
+      updateOrder(order.firestoreId, { paid: !order.paid });
+    }
   };
 
   const deleteOrder = (orderId) => {
-    const newOrders = orders.filter((o) => o.id !== orderId);
-    saveOrders(newOrders);
+    const order = orders.find((o) => o.id === orderId);
+    if (order?.firestoreId) {
+      deleteOrderFromDB(order.firestoreId);
+    }
   };
 
   const cancelOrder = (orderId) => {
-    const newOrders = orders.map((o) =>
-      o.id === orderId ? { ...o, cancelled: !o.cancelled } : o
-    );
-    saveOrders(newOrders);
+    const order = orders.find((o) => o.id === orderId);
+    if (order?.firestoreId) {
+      updateOrder(order.firestoreId, { cancelled: !order.cancelled });
+    }
   };
 
   const activeOrders = orders.filter((o) => !o.cancelled);
